@@ -2,17 +2,19 @@ import React, { useState, useEffect } from 'react';
 import { Header } from './components/Header';
 import { AppCard } from './components/AppCard';
 import { InputPanel } from './components/InputPanel';
+import { BureaucracyModal } from './components/BureaucracyModal';
 import { getAppDomain } from './services/geminiService';
-import { AppItem, AppStatus } from './types';
-import { v4 as uuidv4 } from 'uuid';
+import { AppItem, AppStatus, Language } from './types';
+import { translations } from './utils/translations';
 
-// Helper to generate UUID since we can't use 'uuid' library directly without installing types sometimes in these environments
-// Actually, simple random ID is enough for this demo if uuid fails, but let's implement a simple one.
+// Helper to generate UUID
 const generateId = () => Math.random().toString(36).substring(2, 15);
 
 const App: React.FC = () => {
   const [apps, setApps] = useState<AppItem[]>([]);
   const [loading, setLoading] = useState(false);
+  const [language, setLanguage] = useState<Language>('ru'); // Default to Russian as per request tone
+  const [appToDelete, setAppToDelete] = useState<string | null>(null);
 
   // Initial Seed Data
   useEffect(() => {
@@ -74,9 +76,22 @@ const App: React.FC = () => {
     }));
   };
 
+  const initiateDelete = (id: string) => {
+    setAppToDelete(id);
+  };
+
+  const confirmDelete = () => {
+    if (appToDelete) {
+      setApps(prev => prev.filter(app => app.id !== appToDelete));
+      setAppToDelete(null);
+    }
+  };
+
+  const t = translations[language].status;
+
   return (
     <div className="min-h-screen bg-cyber-black selection:bg-cyan-500/30 selection:text-cyan-100 flex flex-col font-sans">
-      <Header />
+      <Header lang={language} setLang={setLanguage} />
 
       <main className="flex-1 p-4 md:p-8 overflow-y-auto">
         <div className="max-w-7xl mx-auto w-full">
@@ -85,7 +100,7 @@ const App: React.FC = () => {
             <h2 className="text-cyan-500/50 font-mono text-sm tracking-[0.5em] mb-4">
               FIREWALL CONFIGURATION
             </h2>
-            <InputPanel onAdd={handleAddApp} isLoading={loading} />
+            <InputPanel onAdd={handleAddApp} isLoading={loading} lang={language} />
           </div>
 
           {/* Grid Layout */}
@@ -94,14 +109,16 @@ const App: React.FC = () => {
               <AppCard 
                 key={app.id} 
                 app={app} 
-                onToggleStatus={toggleAppStatus} 
+                onToggleStatus={toggleAppStatus}
+                onDelete={initiateDelete}
+                lang={language}
               />
             ))}
           </div>
 
           {apps.length === 0 && !loading && (
             <div className="text-center py-20 border border-dashed border-cyan-900/30 rounded-xl bg-slate-900/20">
-              <p className="text-cyan-800 font-mono">NO PROTOCOLS DETECTED</p>
+              <p className="text-cyan-800 font-mono">{t.noProtocols}</p>
             </div>
           )}
         </div>
@@ -110,11 +127,19 @@ const App: React.FC = () => {
       {/* Footer / Status Bar */}
       <footer className="border-t border-cyan-900/30 bg-black/40 backdrop-blur text-center py-2">
         <div className="flex justify-between max-w-7xl mx-auto px-4 text-[10px] text-cyan-900 font-mono uppercase">
-          <span>System Status: ONLINE</span>
-          <span>Secured by RKN-CORE</span>
-          <span>Latency: 12ms</span>
+          <span>{t.online}</span>
+          <span>{t.secured}</span>
+          <span>{t.latency}</span>
         </div>
       </footer>
+
+      {/* Bureaucratic Delete Modal */}
+      <BureaucracyModal 
+        isOpen={!!appToDelete} 
+        onClose={() => setAppToDelete(null)} 
+        onConfirm={confirmDelete}
+        lang={language}
+      />
     </div>
   );
 };

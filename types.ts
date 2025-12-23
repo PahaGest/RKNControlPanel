@@ -14,3 +14,5 @@ export enum AppStatus {
 export interface AddAppFormData {
   appName: string;
 }
+
+export type Language = 'ru' | 'en';

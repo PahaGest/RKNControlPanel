@@ -1,13 +1,17 @@
 import React, { useState } from 'react';
 import { Plus, Loader2 } from 'lucide-react';
+import { Language } from '../types';
+import { translations } from '../utils/translations';
 
 interface InputPanelProps {
   onAdd: (name: string) => Promise<void>;
   isLoading: boolean;
+  lang: Language;
 }
 
-export const InputPanel: React.FC<InputPanelProps> = ({ onAdd, isLoading }) => {
+export const InputPanel: React.FC<InputPanelProps> = ({ onAdd, isLoading, lang }) => {
   const [inputValue, setInputValue] = useState('');
+  const t = translations[lang].input;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -27,7 +31,7 @@ export const InputPanel: React.FC<InputPanelProps> = ({ onAdd, isLoading }) => {
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
             disabled={isLoading}
-            placeholder="ENTER PROTOCOL NAME (E.G. TELEGRAM)..."
+            placeholder={t.placeholder}
             className="flex-1 bg-transparent border-none outline-none text-cyan-100 placeholder-cyan-800/50 font-mono px-4 py-2 uppercase tracking-wider disabled:opacity-50"
           />
           <button
@@ -40,12 +44,12 @@ export const InputPanel: React.FC<InputPanelProps> = ({ onAdd, isLoading }) => {
             ) : (
               <Plus className="w-4 h-4" />
             )}
-            INJECT
+            {isLoading ? t.loading : t.button}
           </button>
         </div>
         {/* Decorative text below input */}
         <div className="absolute -bottom-6 left-0 text-[10px] text-cyan-900/60 font-mono">
-          System: Waiting for input...
+          {t.system}
         </div>
       </form>
     </div>

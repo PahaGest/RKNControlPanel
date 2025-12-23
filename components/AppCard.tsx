@@ -1,14 +1,19 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { AppItem, AppStatus } from '../types';
+import { AppItem, AppStatus, Language } from '../types';
+import { translations } from '../utils/translations';
+import { Trash2 } from 'lucide-react';
 
 interface AppCardProps {
   app: AppItem;
   onToggleStatus: (id: string) => void;
+  onDelete: (id: string) => void;
+  lang: Language;
 }
 
-export const AppCard: React.FC<AppCardProps> = ({ app, onToggleStatus }) => {
+export const AppCard: React.FC<AppCardProps> = ({ app, onToggleStatus, onDelete, lang }) => {
   const isBlocked = app.status === AppStatus.BLOCKED;
+  const t = translations[lang].card;
 
   return (
     <motion.div
@@ -22,14 +27,30 @@ export const AppCard: React.FC<AppCardProps> = ({ app, onToggleStatus }) => {
           : 'border-cyan-800/40 bg-slate-900/40 hover:border-cyan-400/60 hover:shadow-glow-blue hover:bg-cyan-950/30'
         }
       `}
-      onClick={() => onToggleStatus(app.id)}
     >
       {/* Background Grid Pattern Overlay */}
       <div className="absolute inset-0 opacity-10 pointer-events-none" 
            style={{ backgroundImage: 'linear-gradient(rgba(0, 255, 255, 0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(0, 255, 255, 0.1) 1px, transparent 1px)', backgroundSize: '20px 20px' }}>
       </div>
 
-      <div className="relative z-10 p-6 flex flex-col items-center justify-center h-48 md:h-56">
+      {/* Delete Button - Top Right */}
+      <div className="absolute top-2 right-2 z-20">
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onDelete(app.id);
+          }}
+          className="p-2 rounded-full hover:bg-red-500/20 text-slate-600 hover:text-red-500 transition-colors duration-300 opacity-0 group-hover:opacity-100"
+          title={t.delete}
+        >
+          <Trash2 className="w-4 h-4" />
+        </button>
+      </div>
+
+      <div 
+        className="relative z-10 p-6 flex flex-col items-center justify-center h-48 md:h-56"
+        onClick={() => onToggleStatus(app.id)}
+      >
         
         {/* Icon Container */}
         <div className="relative mb-6">
@@ -70,11 +91,11 @@ export const AppCard: React.FC<AppCardProps> = ({ app, onToggleStatus }) => {
                  animate={{ opacity: 1, y: 0 }}
                  className="text-red-500 font-mono text-xs tracking-[0.2em] font-bold glow-text-red"
                >
-                 ЗАБЛОКИРОВАНО
+                 {t.blocked}
                </motion.span>
              ) : (
                <span className="text-cyan-600/70 font-mono text-[10px] tracking-widest">
-                 ACTIVE // {app.domain.toUpperCase()}
+                 {t.active} // {app.domain.toUpperCase()}
                </span>
              )}
           </div>
