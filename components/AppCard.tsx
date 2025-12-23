@@ -2,18 +2,22 @@ import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AppItem, AppStatus, Language } from '../types';
 import { translations } from '../utils/translations';
-import { Trash2 } from 'lucide-react';
+import { Trash2, Lock } from 'lucide-react';
 
 interface AppCardProps {
   app: AppItem;
   onToggleStatus: (id: string) => void;
   onDelete: (id: string) => void;
   lang: Language;
+  isLockdown?: boolean;
 }
 
-export const AppCard: React.FC<AppCardProps> = ({ app, onToggleStatus, onDelete, lang }) => {
+export const AppCard: React.FC<AppCardProps> = ({ app, onToggleStatus, onDelete, lang, isLockdown = false }) => {
   const isBlocked = app.status === AppStatus.BLOCKED;
   const t = translations[lang].card;
+
+  // Determine if interaction is disabled (Can't unblock if locked down)
+  const isInteractionDisabled = isBlocked && isLockdown;
 
   return (
     <motion.div
@@ -21,7 +25,11 @@ export const AppCard: React.FC<AppCardProps> = ({ app, onToggleStatus, onDelete,
       initial={{ opacity: 0, scale: 0.9 }}
       animate={{ opacity: 1, scale: 1 }}
       className={`
-        relative group cursor-pointer overflow-hidden rounded-xl border-2 transition-all duration-300
+        relative group overflow-hidden rounded-xl border-2 transition-all duration-300
+        ${isInteractionDisabled 
+          ? 'cursor-not-allowed opacity-80' // Locked state style
+          : 'cursor-pointer'
+        }
         ${isBlocked 
           ? 'border-red-600/60 bg-red-950/20 shadow-glow-red' 
           : 'border-cyan-800/40 bg-slate-900/40 hover:border-cyan-400/60 hover:shadow-glow-blue hover:bg-cyan-950/30'
@@ -33,19 +41,21 @@ export const AppCard: React.FC<AppCardProps> = ({ app, onToggleStatus, onDelete,
            style={{ backgroundImage: 'linear-gradient(rgba(0, 255, 255, 0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(0, 255, 255, 0.1) 1px, transparent 1px)', backgroundSize: '20px 20px' }}>
       </div>
 
-      {/* Delete Button - Top Right */}
-      <div className="absolute top-2 right-2 z-20">
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            onDelete(app.id);
-          }}
-          className="p-2 rounded-full hover:bg-red-500/20 text-slate-600 hover:text-red-500 transition-colors duration-300 opacity-0 group-hover:opacity-100"
-          title={t.delete}
-        >
-          <Trash2 className="w-4 h-4" />
-        </button>
-      </div>
+      {/* Delete Button - Top Right - Hidden during Lockdown */}
+      {!isLockdown && (
+        <div className="absolute top-2 right-2 z-20">
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onDelete(app.id);
+            }}
+            className="p-2 rounded-full hover:bg-red-500/20 text-slate-600 hover:text-red-500 transition-colors duration-300 opacity-0 group-hover:opacity-100"
+            title={t.delete}
+          >
+            <Trash2 className="w-4 h-4" />
+          </button>
+        </div>
+      )}
 
       <div 
         className="relative z-10 p-6 flex flex-col items-center justify-center h-48 md:h-56"
@@ -76,6 +86,13 @@ export const AppCard: React.FC<AppCardProps> = ({ app, onToggleStatus, onDelete,
               </motion.div>
             )}
           </AnimatePresence>
+
+          {/* Lockdown Lock Icon Overlay */}
+          {isInteractionDisabled && (
+            <div className="absolute inset-0 flex items-center justify-center z-20">
+              <Lock className="w-8 h-8 text-white drop-shadow-md" />
+            </div>
+          )}
         </div>
 
         {/* Text Details */}

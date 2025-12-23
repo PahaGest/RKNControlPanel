@@ -41,6 +41,13 @@ export const translations = {
       next: 'PROCEED',
       confirm: 'EXECUTE PURGE',
       wait: 'WAIT...',
+    },
+    lockdown: {
+      banner_title: 'FEDERAL INSPECTION IN PROGRESS',
+      banner_desc: 'You tried to block the Regulator. "Self-Censorship" mode activated.',
+      timer: 'UNBLOCKING DISABLED FOR:',
+      alert_trigger: 'CRITICAL ERROR: RECURSION DETECTED. YOU CANNOT BLOCK THE BLOCKER. INITIATING 15-MINUTE PENALTY.',
+      restrict_unblock: 'ACCESS DENIED: UNBLOCKING PROHIBITED DURING INSPECTION.',
     }
   },
   ru: {
@@ -83,6 +90,13 @@ export const translations = {
       next: 'ДАЛЕЕ',
       confirm: 'ВЫПОЛНИТЬ',
       wait: 'ЖДИТЕ...',
+    },
+    lockdown: {
+      banner_title: 'ПРОВОДИТСЯ ФЕДЕРАЛЬНАЯ ПРОВЕРКА',
+      banner_desc: 'Вы попытались заблокировать Регулятор. Активирован режим "Самоцензура".',
+      timer: 'РАЗБЛОКИРОВКА НЕДОСТУПНА:',
+      alert_trigger: 'КРИТИЧЕСКАЯ ОШИБКА: ОБНАРУЖЕНА РЕКУРСИЯ. НЕЛЬЗЯ ЗАБЛОКИРОВАТЬ БЛОКИРАТОРА. ШТРАФНОЙ РЕЖИМ 15 МИНУТ.',
+      restrict_unblock: 'ОТКАЗАНО: РАЗБЛОКИРОВКА ЗАПРЕЩЕНА ВО ВРЕМЯ ПРОВЕРКИ.',
     }
   }
 };

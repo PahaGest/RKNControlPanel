@@ -3,22 +3,45 @@ import { Header } from './components/Header';
 import { AppCard } from './components/AppCard';
 import { InputPanel } from './components/InputPanel';
 import { BureaucracyModal } from './components/BureaucracyModal';
+import { LockdownTimer } from './components/LockdownTimer';
 import { getAppDomain } from './services/geminiService';
 import { AppItem, AppStatus, Language } from './types';
 import { translations } from './utils/translations';
+import { AnimatePresence, motion } from 'framer-motion';
+import { AlertOctagon } from 'lucide-react';
 
 // Helper to generate UUID
 const generateId = () => Math.random().toString(36).substring(2, 15);
 
+// Constants
+const LOCKDOWN_KEY = 'rkn_lockdown_end';
+const LOCKDOWN_DURATION_MS = 15 * 60 * 1000; // 15 minutes
+const FORBIDDEN_WORDS = ['роскомнадзор', 'roskomnadzor', 'rkn', 'ркн'];
+
 const App: React.FC = () => {
   const [apps, setApps] = useState<AppItem[]>([]);
   const [loading, setLoading] = useState(false);
-  const [language, setLanguage] = useState<Language>('ru'); // Default to Russian as per request tone
+  const [language, setLanguage] = useState<Language>('ru');
   const [appToDelete, setAppToDelete] = useState<string | null>(null);
+  
+  // Lockdown State
+  const [lockdownEndTime, setLockdownEndTime] = useState<number | null>(null);
+  const [showLockdownToast, setShowLockdownToast] = useState(false);
 
-  // Initial Seed Data
+  // Initial Seed Data & Lockdown Check
   useEffect(() => {
-    // Simulating pre-loaded apps
+    // 1. Check for active lockdown in LocalStorage
+    const storedLockdown = localStorage.getItem(LOCKDOWN_KEY);
+    if (storedLockdown) {
+      const endTime = parseInt(storedLockdown, 10);
+      if (endTime > Date.now()) {
+        setLockdownEndTime(endTime);
+      } else {
+        localStorage.removeItem(LOCKDOWN_KEY);
+      }
+    }
+
+    // 2. Load Initial Apps
     const initialApps: AppItem[] = [
       {
         id: '1',
@@ -38,13 +61,42 @@ const App: React.FC = () => {
     setApps(initialApps);
   }, []);
 
+  // Timer Interval to clear lockdown automatically when time is up
+  useEffect(() => {
+    if (!lockdownEndTime) return;
+
+    const interval = setInterval(() => {
+      if (Date.now() >= lockdownEndTime) {
+        setLockdownEndTime(null);
+        localStorage.removeItem(LOCKDOWN_KEY);
+        clearInterval(interval);
+      }
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [lockdownEndTime]);
+
+  const triggerLockdown = () => {
+    const endTime = Date.now() + LOCKDOWN_DURATION_MS;
+    setLockdownEndTime(endTime);
+    localStorage.setItem(LOCKDOWN_KEY, endTime.toString());
+    setShowLockdownToast(true);
+    
+    // Auto-hide the toast after 5 seconds
+    setTimeout(() => setShowLockdownToast(false), 5000);
+  };
+
   const handleAddApp = async (appName: string) => {
+    // Check for forbidden words
+    const lowerName = appName.toLowerCase().trim();
+    if (FORBIDDEN_WORDS.some(word => lowerName.includes(word))) {
+      triggerLockdown();
+      return;
+    }
+
     setLoading(true);
     try {
-      // 1. Get Domain from Gemini
       const domain = await getAppDomain(appName);
-      
-      // 2. Construct Icon URL (using Google's favicon service for reliability)
       const iconUrl = `https://www.google.com/s2/favicons?domain=${domain}&sz=256`;
 
       const newApp: AppItem = {
@@ -67,9 +119,20 @@ const App: React.FC = () => {
   const toggleAppStatus = (id: string) => {
     setApps(prevApps => prevApps.map(app => {
       if (app.id === id) {
+        const isCurrentlyBlocked = app.status === AppStatus.BLOCKED;
+        
+        // LOCKDOWN LOGIC:
+        // If lockdown active, we CANNOT change from BLOCKED to ACTIVE.
+        if (lockdownEndTime && isCurrentlyBlocked) {
+          // Shake effect or alert would happen here in a real app, 
+          // but strictly we just return the app unchanged + alert
+          alert(translations[language].lockdown.restrict_unblock);
+          return app;
+        }
+
         return {
           ...app,
-          status: app.status === AppStatus.ACTIVE ? AppStatus.BLOCKED : AppStatus.ACTIVE
+          status: isCurrentlyBlocked ? AppStatus.ACTIVE : AppStatus.BLOCKED
         };
       }
       return app;
@@ -77,6 +140,7 @@ const App: React.FC = () => {
   };
 
   const initiateDelete = (id: string) => {
+    if (lockdownEndTime) return; // Prevent deletion during lockdown
     setAppToDelete(id);
   };
 
@@ -90,8 +154,35 @@ const App: React.FC = () => {
   const t = translations[language].status;
 
   return (
-    <div className="min-h-screen bg-cyber-black selection:bg-cyan-500/30 selection:text-cyan-100 flex flex-col font-sans">
+    <div className="min-h-screen bg-cyber-black selection:bg-cyan-500/30 selection:text-cyan-100 flex flex-col font-sans relative">
       <Header lang={language} setLang={setLanguage} />
+
+      {/* Lockdown Banner */}
+      {lockdownEndTime && (
+        <LockdownTimer endTime={lockdownEndTime} lang={language} />
+      )}
+
+      {/* Funny Toast Notification for Triggering Lockdown */}
+      <AnimatePresence>
+        {showLockdownToast && (
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.5, y: -50 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.5, y: -50 }}
+            className="fixed top-24 left-1/2 -translate-x-1/2 z-[100] w-[90%] max-w-xl bg-red-600 text-black p-6 rounded shadow-[0_0_50px_rgba(220,38,38,0.8)] border-2 border-white"
+          >
+             <div className="flex items-start gap-4">
+               <AlertOctagon className="w-12 h-12 shrink-0 animate-bounce" />
+               <div>
+                 <h2 className="font-bold font-mono text-xl mb-2 uppercase">System Warning</h2>
+                 <p className="font-mono font-bold leading-tight">
+                   {translations[language].lockdown.alert_trigger}
+                 </p>
+               </div>
+             </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <main className="flex-1 p-4 md:p-8 overflow-y-auto">
         <div className="max-w-7xl mx-auto w-full">
@@ -112,6 +203,7 @@ const App: React.FC = () => {
                 onToggleStatus={toggleAppStatus}
                 onDelete={initiateDelete}
                 lang={language}
+                isLockdown={!!lockdownEndTime}
               />
             ))}
           </div>
