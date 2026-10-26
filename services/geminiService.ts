@@ -9,7 +9,7 @@ const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 export const getAppDomain = async (appName: string): Promise<string> => {
   try {
     const response = await ai.models.generateContent({
-      model: 'gemini-3.5-flash',
+      model: 'gemini-3.1-flash-lite',
       contents: `What is the primary website domain name for the application named "${appName}"? 
       Only return the domain string (e.g., "discord.com", "telegram.org"). 
       Do not include https:// or www. 
